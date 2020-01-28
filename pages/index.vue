@@ -25,8 +25,8 @@
 <script>
   import axios from 'axios'
 
-  //const BACKEND_BASE_URL = 'https://minterpush.ru'
-  const BACKEND_BASE_URL = 'http://localhost:3048'
+  const BACKEND_BASE_URL = 'https://minterpush.ru'
+  //const BACKEND_BASE_URL = 'http://localhost:3048'
   const LINK = 'https://minterpush.ru/w/';
 
   export default {

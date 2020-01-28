@@ -172,8 +172,8 @@
   import { coinToBuffer } from 'minterjs-tx/src/helpers'
   import TxSignature from 'minterjs-tx/src/tx-signature'
 
-  //const BACKEND_BASE_URL = 'https://minterpush.ru'
-  const BACKEND_BASE_URL = 'http://localhost:3048'
+  const BACKEND_BASE_URL = 'https://minterpush.ru'
+  //const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
 
   export default {
