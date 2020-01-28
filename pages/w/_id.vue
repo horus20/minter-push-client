@@ -82,8 +82,6 @@
       <template v-else>
         <b-card
           title="Кошелёк"
-          style="max-width: 20rem;"
-          class="mb-2"
         >
           <b-card-text>
             Привет, этот push-кошелёк уже ранее был активирован, чтобы получить доступ введи pincode (6 цифр).
@@ -279,7 +277,7 @@
           const response = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}`, {
             mxaddress: this.address,
           });
-          if (response.status === 201) {
+          if (response.status === 200) {
             if (response.data.status === 100) {
               // activate complete!
               this.isCreateNew = false;
