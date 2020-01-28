@@ -1,72 +1,70 @@
 <template>
   <div class="container">
-    <div>
-      <logo />
-      <h1 class="title">
-        minter-push-client
-      </h1>
-      <h2 class="subtitle">
-        Minter push client side
-      </h2>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          class="button--green"
-        >
-          Documentation
-        </a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          class="button--grey"
-        >
-          GitHub
-        </a>
+    <div class="row">
+      <div class="col">
+        <h1>Minter push wallet</h1>
+        <h3>Если у вас есть ссылка перейдте по ней</h3>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <h3>Создание нового push wallet</h3>
+        <b-button variant="outline-info" v-on:click="createNew">Создать новый push-wallet</b-button>
+
+        <ul v-if="isCreateNew" style="padding-left: 0; list-style: none;">
+          <li>1. Пополните <br><strong>
+            <a v-bind:href="linka" target="_blank">{{ mxaddress}}</a></strong><br> на сумму, которая будет переведена на pushwallet после активации (за вычетом небольшой комиссии)</li>
+          <li>2. Отправьте ссылку: <br><strong><a v-bind:href="link" target="_blank">{{ link }}</a></strong></li>
+          <li>3. При первом открытии этой ссылки нужно будет придумать pincode, который позволит распоряжаться средствами.</li>
+        </ul>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import Logo from '~/components/Logo.vue'
+  import axios from 'axios'
 
-export default {
-  components: {
-    Logo
+  //const BACKEND_BASE_URL = 'https://minterpush.ru'
+  const BACKEND_BASE_URL = 'http://localhost:3048'
+  const LINK = 'https://minterpush.ru/w/';
+
+  export default {
+    data () {
+      return {
+        mxaddress: '',
+        link: '',
+        isCreateNew: false,
+      }
+    },
+    computed: {
+      linka() {
+        return `https://explorer.minter.network/address/${this.mxaddress}`
+      }
+    },
+    methods: {
+      createNew: async function () {
+        try {
+          const response = await axios.post(`${BACKEND_BASE_URL}/api/company`, {})
+          if (response && response.status === 201) {
+            if (response.data.status === 100) { // new
+              // show "hi form" and create pincode
+              this.isCreateNew = true;
+              this.mxaddress = response.data.warehouseWallet.mxaddress;
+              this.link = LINK + response.data.wallets[0].uid
+            } else {
+              this.isCreateNew = false;
+            }
+          }
+        } catch (error) {
+          this.isCreateNew = false;
+          console.error(error);
+        }
+      }
+    }
   }
-}
 </script>
 
-<style>
-.container {
-  margin: 0 auto;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
+<style scoped>
 
-.title {
-  font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  display: block;
-  font-weight: 300;
-  font-size: 100px;
-  color: #35495e;
-  letter-spacing: 1px;
-}
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
-}
 </style>
