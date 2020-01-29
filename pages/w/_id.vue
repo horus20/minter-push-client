@@ -56,6 +56,7 @@
         <div class="col hide-md">
           <h4>Потратить</h4>
           <b-button variant="outline-success" block v-on:click="showPhoneUp">Оплатить телефон</b-button>
+          <b-button variant="outline-success" block v-on:click="showTimeLoop">Пополнить счет в игре TimeLoop</b-button>
           <b-button variant="outline-secondary" block disabled>Купить Gift карты (yandex, ozon)</b-button>
           <b-button variant="outline-secondary" block disabled> ????? </b-button>
         </div>
@@ -200,9 +201,11 @@
     >
 
       <b-form ref="form">
-        <div class="row"><div class="col">
-          <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru">BipToPhone</a></p>
-        </div></div>
+        <div class="row">
+          <div class="col">
+            <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru">BipToPhone</a></p>
+          </div>
+        </div>
         <b-form-group label="Сумма пополнения:" label-for="input-value"
                       description="Сумма, которая будет передана партнеру для зачисления"
         >
@@ -238,6 +241,42 @@
       </b-form>
     </b-modal>
 
+    <!-- time loopform -->
+    <b-modal id="modalTimeloop" centered title="Пополнить счет в TimeLoop"
+             header-bg-variant="info"
+             header-text-variant="light"
+             @show="resetTransferModal"
+             @hidden="resetTransferModal"
+             @ok="sendTimeLoopModal"
+    >
+
+      <b-form ref="form">
+        <div class="row">
+          <div class="col">
+            <p>Пополнение счета игрока в игре <a href="https://timeloop.games/">TimeLoop</a></p>
+          </div>
+        </div>
+        <b-form-group label="Сумма пополнения:" label-for="input-value"
+                      description="Сумма, которая будет зачислена на игровой счет"
+        >
+          <b-form-input
+            id="input-value"
+            v-model="transfer.value"
+            type="number"
+            required
+            placeholder="Введите сумму"
+            help
+          ></b-form-input>
+        </b-form-group>
+
+        <b-form-group label="Монета:" label-for="input-coin" id="input-group-tl3">
+          <b-form-select v-model="transfer.symbol" required>
+            <b-form-select-option v-for="balance in balances" v-bind:value="balance.coin">{{ balance.coin }}</b-form-select-option>
+          </b-form-select>
+        </b-form-group>
+      </b-form>
+    </b-modal>
+
   </div>
 </template>
 
@@ -251,10 +290,12 @@
   import { coinToBuffer } from 'minterjs-tx/src/helpers'
   import TxSignature from 'minterjs-tx/src/tx-signature'
   import VueQrcode from '@chenfengyuan/vue-qrcode'
+  import * as cryptoRandomString from 'crypto-random-string'
 
-  const BACKEND_BASE_URL = 'https://minterpush.ru'
-  //const BACKEND_BASE_URL = 'http://localhost:3048'
+  //const BACKEND_BASE_URL = 'https://minterpush.ru'
+  const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
+  const EXPLORER_GATE_API_URL = 'https://gate-api.minter.network'
   const LINK = 'https://minterpush.ru/w/'
 
   export default {
@@ -343,9 +384,9 @@
             this.balances = response.data.data.balances
           }
 
-          response = await axios.get(`${EXPLORER_BASE_URL}/api/v1/addresses/${this.address}/transactions`)
-          if (response.data && response.data.meta && response.data.meta) {
-            this.nonce = response.data.meta.total
+          response = await axios.get(`${EXPLORER_GATE_API_URL}/api/v1/nonce/${this.address}`)
+          if (response.data && response.data.data && response.data.data.nonce) {
+            this.nonce = Number(response.data.data.nonce) + 1
           }
         } catch (error) {
           this.errorMsg = 'Ошибка обновления информации о балансе'
@@ -438,6 +479,9 @@
       },
       showPhoneUp: function () {
         this.$bvModal.show('modalPhoneUpForm')
+      },
+      showTimeLoop: function () {
+        this.$bvModal.show('modalTimeloop')
       },
       sendTransferModal: async function (bvModalEvt) {
         // Prevent modal from closing
@@ -540,6 +584,33 @@
           this.$bvModal.hide('modalPhoneUpForm')
         })
       },
+      sendTimeLoopModal: async function (bvModalEvt) {
+        bvModalEvt.preventDefault()
+
+        this.transfer.address = '0x0'
+        if (!this.checkTransferForm()) {
+          return
+        }
+        // create timeloop link
+        const secretCode = cryptoRandomString({
+          length: 10,
+          type: 'hex',
+        })
+        const secretCodeHash = SHA256(secretCode).toString()
+        const timeloopAddress = 'Mx3650064486380210127159872871912061022891'
+        const link = `https://timeloop.games/?gift=${secretCode}`
+        const result = await this.sendTransfer(timeloopAddress, this.transfer.value, this.transfer.symbol, secretCodeHash)
+        if (result) {
+          this.successMsg = `Остался последний шаг, перейди по ссылке! <br>
+                    Ссылка: <strong><a href="${link}" target="_blank">${link}</a></strong>`
+          this.successMsgLink = link
+          this.$bvModal.show('modalSuccess')
+        }
+
+        this.$nextTick(() => {
+          this.$bvModal.hide('modalTimeloop')
+        })
+      },
       resetTransferModal: function () {
         this.transfer = {
           address: '',
@@ -554,14 +625,14 @@
        *
        * @returns {Promise<void>}
        */
-      sendTransfer: async function (to, value, symbol) {
+      sendTransfer: async function (to, value, symbol, payload = null) {
         try {
           const txData = new TxDataSend({
             to: toBuffer(to),
             coin: coinToBuffer(symbol),
             value: `0x${convertToPip(value, 'hex')}`,
           })
-          const tx = new Tx({
+          const txParams = {
             nonce: String('0x' + this.toHex(this.nonce)),
             chainId: '0x01',
             gasPrice: '0x01',
@@ -569,7 +640,12 @@
             type: TX_TYPE.SEND,
             data: txData.serialize(),
             signatureType: '0x01'
-          })
+          }
+          if (payload) {
+            txParams.payload = `0x${Buffer.from(payload, 'utf-8').toString('hex')}`
+          }
+
+          const tx = new Tx(txParams)
           const privateKeyBuffer = Buffer.from(this.privateKey, 'hex')
           tx.signatureData = (new TxSignature()).sign(tx.hash(false), privateKeyBuffer).serialize()
           const serializedTx = tx.serialize().toString('hex')
