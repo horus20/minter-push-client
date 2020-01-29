@@ -292,8 +292,8 @@
   import VueQrcode from '@chenfengyuan/vue-qrcode'
   import * as cryptoRandomString from 'crypto-random-string'
 
-  //const BACKEND_BASE_URL = 'https://minterpush.ru'
-  const BACKEND_BASE_URL = 'http://localhost:3048'
+  const BACKEND_BASE_URL = 'https://minterpush.ru'
+  //const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
   const EXPLORER_GATE_API_URL = 'https://gate-api.minter.network'
   const LINK = 'https://minterpush.ru/w/'
