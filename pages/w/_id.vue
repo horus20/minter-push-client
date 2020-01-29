@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="row header-section">
-      <div class="col-2">logo</div>
+      <div class="col-2"><b-img src="/minter-logo-circle.png" fluid alt="Responsive image" style="max-width: 36px;"></b-img></div>
       <div class="col-7 text-center"><span class="font-weight-bold">#{{ uid }}</span></div>
       <div class="col-3 language-box text-right"><span class="">RU</span></div>
     </div>
@@ -17,6 +17,11 @@
               </h5>
               <div>
                 <span v-for="balance in balances">{{ prettyFormat(balance.amount) }} <span class="symbol">{{ balance.coin }}</span></span>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <b-button variant="outline-success" block size="sm" v-on:click="updateBalance">Обновить данные баланса</b-button>
+                </div>
               </div>
               <!--<div class="row">
                 <div class="col">
@@ -42,15 +47,15 @@
         <div class="col hide-md">
           <h4>Перевести</h4>
           <b-button variant="outline-info" block v-on:click="showTransfer">Другой кошелек в сети Minter</b-button>
-          <b-button variant="outline-info" block disabled v-on:click="showEmailTransfer">Отправить на email</b-button>
-          <b-button variant="outline-info" block disabled v-on:click="showPushTransfer">Создать новый push-wallet</b-button>
+          <!-- <b-button variant="outline-info" block disabled v-on:click="showEmailTransfer">Отправить на email</b-button>-->
+          <b-button variant="outline-info" block v-on:click="showPushTransfer">Создать новый push-wallet</b-button>
         </div>
       </div>
 
       <div class="row payment-sections">
         <div class="col hide-md">
           <h4>Потратить</h4>
-          <b-button variant="outline-success" block disabled>Оплатить телефон</b-button>
+          <b-button variant="outline-success" block v-on:click="showPhoneUp">Оплатить телефон</b-button>
           <b-button variant="outline-secondary" block disabled>Купить Gift карты (yandex, ozon)</b-button>
           <b-button variant="outline-secondary" block disabled> ????? </b-button>
         </div>
@@ -58,10 +63,10 @@
 
       <div class="row payment-sections">
         <div class="col hide-md">
-          <h4>Узнать больше о ...</h4>
-          <a class="btn-outline-info btn btn-sm btn-block" href="https://minterpush.ru" target="_blank">Проект Minter push wallet</a>
+          <h4>Узнать больше ...</h4>
+          <!--<a class="btn-outline-info btn btn-sm btn-block" href="https://minterpush.ru" target="_blank">Проект Minter push wallet</a>-->
           <a class="btn-outline-info btn btn-sm btn-block" href="https://about.minter.network/ru/" target="_blank">о проекте Minter</a>
-          <a class="btn-outline-info btn btn-sm btn-block" href="https://ru.minter.wiki/" target="_blank">Wiki проекта</a>
+          <a class="btn-outline-info btn btn-sm btn-block" href="https://ru.minter.wiki/" target="_blank">Minter wiki</a>
         </div>
       </div>
     </template>
@@ -94,29 +99,26 @@
     </template>
 
     <!-- error modal -->
-    <b-modal id="modalError" size="sm" centered title="Error" ok-only
+    <b-modal id="modalError" centered title="Ошибка" ok-only
              header-bg-variant="danger"
              header-text-variant="light"
     >
-
-      <p>
-        {{ errorMsg }}
-      </p>
+      <div v-html="errorMsg">
+      </div>
     </b-modal>
 
     <!-- success -->
-    <b-modal id="modalSuccess" size="sm" centered title="Success" ok-only
+    <b-modal id="modalSuccess" centered title="" ok-only
              header-bg-variant="info"
              header-text-variant="light"
     >
-
-      <p>
-        {{ successMsg }}
-      </p>
+      <div v-html="successMsg">
+      </div>
+      <div v-if="successMsgLink!==''" class="text-center"><qrcode v-bind:value="successMsgLink" :options="{ width: 200 }"></qrcode></div>
     </b-modal>
 
     <!-- transfer modal -->
-    <b-modal id="modalTransfer" size="sm" centered title="Transfer"
+    <b-modal id="modalTransfer" centered title="Перевод"
              header-bg-variant="info"
              header-text-variant="light"
              @show="resetTransferModal"
@@ -157,6 +159,85 @@
       </b-form>
     </b-modal>
 
+    <!-- create new push wallet -->
+    <b-modal id="modalPushTransfer" centered title="Создать новый push wallet"
+             header-bg-variant="info"
+             header-text-variant="light"
+             @show="resetTransferModal"
+             @hidden="resetTransferModal"
+             @ok="sendPushTransferModal"
+    >
+
+      <b-form ref="form">
+        <b-form-group label="Сумма пополнения:" label-for="input-value"
+                      description="Сумма, которая будет зачислена за вычетом небольшой комиссии"
+        >
+          <b-form-input
+            id="input-value"
+            v-model="transfer.value"
+            type="number"
+            required
+            placeholder="Введите сумму"
+            help
+          ></b-form-input>
+        </b-form-group>
+
+        <b-form-group label="Монета:" label-for="input-coin" id="input-group-tp3">
+          <b-form-select v-model="transfer.symbol" required>
+            <b-form-select-option v-for="balance in balances" v-bind:value="balance.coin">{{ balance.coin }}</b-form-select-option>
+          </b-form-select>
+        </b-form-group>
+      </b-form>
+    </b-modal>
+
+    <!-- phone up form -->
+    <b-modal id="modalPhoneUpForm" centered title="Пополнить счет"
+             header-bg-variant="info"
+             header-text-variant="light"
+             @show="resetTransferModal"
+             @hidden="resetTransferModal"
+             @ok="sendPhoneUpModal"
+    >
+
+      <b-form ref="form">
+        <div class="row"><div class="col">
+          <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru">BipToPhone</a></p>
+        </div></div>
+        <b-form-group label="Сумма пополнения:" label-for="input-value"
+                      description="Сумма, которая будет передана партнеру для зачисления"
+        >
+          <b-form-group
+            id="input-group-pr-1"
+            label="Ваш телефон:"
+            label-for="input-mxaddress"
+          >
+            <b-form-input
+              id="input-phone"
+              v-model="transfer.address"
+              type="text"
+              required
+              placeholder="Телефон +79..."
+            ></b-form-input>
+          </b-form-group>
+
+          <b-form-input
+            id="input-value"
+            v-model="transfer.value"
+            type="number"
+            required
+            placeholder="Введите сумму"
+            help
+          ></b-form-input>
+        </b-form-group>
+
+        <b-form-group label="Монета:" label-for="input-coin" id="input-group-pr3">
+          <b-form-select v-model="transfer.symbol" required>
+            <b-form-select-option v-for="balance in balances" v-bind:value="balance.coin">{{ balance.coin }}</b-form-select-option>
+          </b-form-select>
+        </b-form-group>
+      </b-form>
+    </b-modal>
+
   </div>
 </template>
 
@@ -169,12 +250,17 @@
   import TxDataSend from 'minterjs-tx/src/tx-data/send'
   import { coinToBuffer } from 'minterjs-tx/src/helpers'
   import TxSignature from 'minterjs-tx/src/tx-signature'
+  import VueQrcode from '@chenfengyuan/vue-qrcode'
 
-  const BACKEND_BASE_URL = 'https://minterpush.ru'
-  //const BACKEND_BASE_URL = 'http://localhost:3048'
+  //const BACKEND_BASE_URL = 'https://minterpush.ru'
+  const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
+  const LINK = 'https://minterpush.ru/w/'
 
   export default {
+    components: {
+      qrcode: VueQrcode
+    },
     data () {
       return {
         uid: '',
@@ -182,6 +268,7 @@
 
         errorMsg: '',
         successMsg: '',
+        successMsgLink: '',
 
         isCreateNew: true,
         isLogin: false,
@@ -222,14 +309,14 @@
           if (response && response.status === 200) {
             if (response.data.status === 50) { // new
               // show "hi form" and create pincode
-              this.isCreateNew = true;
+              this.isCreateNew = true
             } else {
-              this.isCreateNew = false;
+              this.isCreateNew = false
             }
           }
         } catch (error) {
-          this.isCreateNew = false;
-          console.error(error);
+          this.isCreateNew = false
+          console.error(error)
         }
       },
       /**
@@ -237,7 +324,7 @@
        */
       generateAddress: function () {
         // формируем новый mx-адрес из url+pincode
-        const privateKey = SHA256(`${this.uid}${this.pincode}`).toString();
+        const privateKey = SHA256(`${this.uid}${this.pincode}`).toString()
         const privateKeyBuffer = Buffer.from(privateKey, 'hex')
         const wallet = walletFromPrivateKey(privateKeyBuffer)
 
@@ -276,19 +363,19 @@
           // try activate
           const response = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}`, {
             mxaddress: this.address,
-          });
+          })
           if (response.status === 200) {
             if (response.data.status === 100) {
               // activate complete!
-              this.isCreateNew = false;
-              this.isLogin = true;
+              this.isCreateNew = false
+              this.isLogin = true
               this.updateBalance()
-              return ;
+              return
             }
           }
           // show error
         } catch (error) {
-          console.error(error);
+          console.error(error)
         }
         this.errorMsg = 'Ошибка актиации, попробуйте еще раз'
         this.$bvModal.show('modalError')
@@ -304,26 +391,33 @@
           // try activate
           const response = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}`, {
             mxaddress: this.address,
-          });
+          })
           if (response.status === 200) {
             if (response.data.status === 100) {
               // login success
-              this.isCreateNew = false;
-              this.isLogin = true;
+              this.isCreateNew = false
+              this.isLogin = true
               this.updateBalance()
-              return ;
+              return
             }
           }
           // show error
         } catch (error) {
-          console.error(error);
+          console.error(error)
           this.errorMsg = 'Ошибка авторизации, возможно неверный pincode, попробуйте еще раз'
           this.$bvModal.show('modalError')
         }
       },
+      /**
+       * @param value
+       * @returns {string}
+       */
       prettyFormat: function(value) {
         return Number(value).toFixed(5)
       },
+      /**
+       * @returns {boolean}
+       */
       checkTransferForm: function () {
         const isValid = this.transfer.address !== "" && this.transfer.value !== "" && this.transfer.symbol !== ""
 
@@ -334,13 +428,16 @@
         return isValid
       },
       showTransfer: function () {
-        this.$bvModal.show('modalTransfer');
+        this.$bvModal.show('modalTransfer')
       },
       showPushTransfer: function () {
-        this.$bvModal.show('modalTransfer');
+        this.$bvModal.show('modalPushTransfer')
       },
       showEmailTransfer: function () {
-        this.$bvModal.show('modalTransfer');
+        this.$bvModal.show('modalTransfer')
+      },
+      showPhoneUp: function () {
+        this.$bvModal.show('modalPhoneUpForm')
       },
       sendTransferModal: async function (bvModalEvt) {
         // Prevent modal from closing
@@ -350,11 +447,97 @@
           return
         }
 
-        await this.sendTransfer();
+        const result = await this.sendTransfer(this.transfer.address, this.transfer.value, this.transfer.symbol)
+        if (result) {
+          this.successMsg = 'Транзакция успешно отправлена'
+          this.$bvModal.show('modalSuccess')
+        }
 
         // Hide the modal manually
         this.$nextTick(() => {
           this.$bvModal.hide('modalTransfer')
+        })
+      },
+      sendPushTransferModal: async function (bvModalEvt) {
+        // Prevent modal from closing
+        bvModalEvt.preventDefault()
+
+        this.transfer.address = '0x0'
+        if (!this.checkTransferForm()) {
+          return
+        }
+
+        try {
+          const response = await axios.post(`${BACKEND_BASE_URL}/api/company`, {})
+          if (response && response.status === 201) {
+            if (response.data.status === 100) { // new
+              const mxaddress = response.data.warehouseWallet.mxaddress
+              const link = LINK + response.data.wallets[0].uid
+
+              const result = await this.sendTransfer(mxaddress, this.transfer.value, this.transfer.symbol)
+              if (result) {
+                this.successMsg = `Кошелёк успешно создан! <br>
+                    Ссылка: <strong><a href="${link}" target="_blank">${link}</a></strong>`
+                this.successMsgLink = link
+                this.$bvModal.show('modalSuccess')
+              }
+
+            } else {
+              throw new Error(response.data)
+            }
+          } else {
+            throw new Error(response.status)
+          }
+        } catch (error) {
+          console.error(error)
+          this.errorMsg = 'Извините при отправке произошла ошибка'
+          this.$bvModal.show('modalError')
+        }
+
+        // Hide the modal manually
+        this.$nextTick(() => {
+          this.$bvModal.hide('modalPushTransfer')
+        })
+      },
+      sendPhoneUpModal: async function (bvModalEvt) {
+        bvModalEvt.preventDefault()
+
+        if (!this.checkTransferForm()) {
+          return
+        }
+
+        try {
+          const response = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}/services/phone`, {
+            mxaddress: this.address,
+            phone: this.transfer.address,
+          })
+          if (response && response.status === 200) {
+            if (response.data) {
+              const mxaddress = response.data
+
+              const result = await this.sendTransfer(mxaddress, this.transfer.value, this.transfer.symbol)
+              if (result) {
+                this.successMsg = `Средства отправлены партнеру и скоро будут зачислены на указанный (${this.transfer.address}) номер телефона!`
+                this.successMsgLink = ''
+                this.$bvModal.show('modalSuccess')
+              }
+
+            } else {
+              this.errorMsg = 'Наш партнер не смог проверить указанный номер телефона'
+              this.$bvModal.show('modalError')
+            }
+          } else {
+            throw new Error(response.status)
+          }
+        } catch (error) {
+          console.error(error)
+          this.errorMsg = 'Извините при отправке произошла ошибка'
+          this.$bvModal.show('modalError')
+        }
+
+        // Hide the modal manually
+        this.$nextTick(() => {
+          this.$bvModal.hide('modalPhoneUpForm')
         })
       },
       resetTransferModal: function () {
@@ -367,40 +550,45 @@
       toHex: function (d) {
         return  ("0"+(Number(d).toString(16))).slice(-2).toUpperCase()
       },
-      sendTransfer: async function () {
+      /**
+       *
+       * @returns {Promise<void>}
+       */
+      sendTransfer: async function (to, value, symbol) {
         try {
           const txData = new TxDataSend({
-            to: toBuffer(this.transfer.address),
-            coin: coinToBuffer(this.transfer.symbol),
-            value: `0x${convertToPip(this.transfer.value, 'hex')}`,
+            to: toBuffer(to),
+            coin: coinToBuffer(symbol),
+            value: `0x${convertToPip(value, 'hex')}`,
           })
           const tx = new Tx({
             nonce: String('0x' + this.toHex(this.nonce)),
             chainId: '0x01',
             gasPrice: '0x01',
-            gasCoin: coinToBuffer(this.transfer.symbol),
+            gasCoin: coinToBuffer(symbol),
             type: TX_TYPE.SEND,
             data: txData.serialize(),
             signatureType: '0x01'
           })
-          const privateKeyBuffer = Buffer.from(this.privateKey, 'hex');
-          tx.signatureData = (new TxSignature()).sign(tx.hash(false), privateKeyBuffer).serialize();
-          const serializedTx = tx.serialize().toString('hex');
+          const privateKeyBuffer = Buffer.from(this.privateKey, 'hex')
+          tx.signatureData = (new TxSignature()).sign(tx.hash(false), privateKeyBuffer).serialize()
+          const serializedTx = tx.serialize().toString('hex')
 
           // send to back
           const txHash = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}/send`, {
             mxaddress: this.address,
             rawTx: serializedTx,
-          });
+          })
 
-          this.successMsg = 'Транзакция успешно отправлена'
-          this.$bvModal.show('modalSuccess')
-          await this.updateBalance();
+          await this.updateBalance()
 
+          return true
         } catch (error) {
-          console.error(error);
+          console.error(error)
           this.errorMsg = 'Извините при отправке произошла ошибка'
           this.$bvModal.show('modalError')
+
+          return false
         }
       }
     }

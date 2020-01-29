@@ -11,10 +11,12 @@
         <h3>Создание нового push wallet</h3>
         <b-button variant="outline-info" v-on:click="createNew">Создать новый push-wallet</b-button>
 
-        <ul v-if="isCreateNew" style="padding-left: 0; list-style: none;">
+        <ul v-if="isCreateNew" style="padding-left: 0; list-style: none; margin-top: 10px;">
           <li>1. Пополните <br><strong>
             <a v-bind:href="linka" target="_blank">{{ mxaddress}}</a></strong><br> на сумму, которая будет переведена на pushwallet после активации (за вычетом небольшой комиссии)</li>
-          <li>2. Отправьте ссылку: <br><strong><a v-bind:href="link" target="_blank">{{ link }}</a></strong></li>
+          <li>2. Отправьте ссылку: <br><strong><a v-bind:href="link" target="_blank">{{ link }}</a></strong>
+            <div class="text-center"><qrcode v-bind:value="link" :options="{ width: 200 }"></qrcode></div>
+          </li>
           <li>3. При первом открытии этой ссылки нужно будет придумать pincode, который позволит распоряжаться средствами.</li>
         </ul>
       </div>
@@ -24,12 +26,16 @@
 
 <script>
   import axios from 'axios'
+  import VueQrcode from '@chenfengyuan/vue-qrcode'
 
   const BACKEND_BASE_URL = 'https://minterpush.ru'
   //const BACKEND_BASE_URL = 'http://localhost:3048'
   const LINK = 'https://minterpush.ru/w/';
 
   export default {
+    components: {
+      qrcode: VueQrcode
+    },
     data () {
       return {
         mxaddress: '',
@@ -48,7 +54,7 @@
           const response = await axios.post(`${BACKEND_BASE_URL}/api/company`, {})
           if (response && response.status === 201) {
             if (response.data.status === 100) { // new
-              // show "hi form" and create pincode
+              // show instruction's
               this.isCreateNew = true;
               this.mxaddress = response.data.warehouseWallet.mxaddress;
               this.link = LINK + response.data.wallets[0].uid
