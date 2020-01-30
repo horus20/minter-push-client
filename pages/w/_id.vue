@@ -277,6 +277,20 @@
       </b-form>
     </b-modal>
 
+    <b-modal id="loader" class="loader-modal" centered
+             :hide-header=true
+             :hide-footer=true
+             :no-close-on-backdrop=true
+             :no-close-on-esc=true
+             content-class="loader-modal"
+    >
+      <div>
+        <div class="d-flex justify-content-center">
+          <b-spinner class="" label="Loading..." variant="light"></b-spinner>
+        </div>
+      </div>
+    </b-modal>
+
   </div>
 </template>
 
@@ -382,6 +396,7 @@
        * @returns {Promise<void>}
        */
       updateBalance: async function () {
+        this.$bvModal.show('loader')
         try {
           let response;
           response = await axios.get(COURCE_BIP_URL)
@@ -413,6 +428,7 @@
           this.errorMsg = 'Ошибка обновления информации о балансе'
           this.$bvModal.show('modalError')
         }
+        this.$bvModal.hide('loader')
       },
       /**
        * activate wallet
@@ -429,6 +445,9 @@
           if (response.status === 200) {
             if (response.data.status === 100) {
               // activate complete!
+              // wait 5 sec
+              await this.sleep(10 * 1000);
+
               this.isCreateNew = false
               this.isLogin = true
               this.updateBalance()
@@ -677,6 +696,7 @@
             rawTx: serializedTx,
           })
 
+          await this.sleep(2 * 1000)
           await this.updateBalance()
 
           return true
@@ -687,6 +707,11 @@
 
           return false
         }
+      },
+      sleep: async function (ms) {
+        this.$bvModal.show('loader')
+        await new Promise(resolve => setTimeout(resolve, ms))
+        this.$bvModal.hide('loader');
       }
     }
   }
@@ -723,5 +748,9 @@
   .pincode {
     margin-bottom: 10px;
 
+  }
+  .loader-modal {
+    background: transparent;
+    border: none;
   }
 </style>
