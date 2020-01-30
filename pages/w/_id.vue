@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="row header-section">
-      <div class="col-2"><b-img src="/minter-logo-circle.png" fluid alt="Responsive image" style="max-width: 36px;"></b-img></div>
+      <div class="col-2"><b-img src="/minter-logo-circle.png" fluid alt="" style="max-width: 36px; margin-top: 3px;"></b-img></div>
       <div class="col-7 text-center"><span class="font-weight-bold">#{{ uid }}</span></div>
       <div class="col-3 language-box text-right"><span class="">RU</span></div>
     </div>

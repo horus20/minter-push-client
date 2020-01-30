@@ -1,23 +1,33 @@
 <template>
   <div class="container">
-    <div class="row">
-      <div class="col">
-        <h1>Minter push wallet</h1>
-        <h3>Если у вас есть ссылка перейдте по ней</h3>
-      </div>
+    <div class="row header-section">
+      <div class="col-2"><b-img src="/minter-logo-circle.png" fluid alt="" style="max-width: 36px; margin-top: 3px;"></b-img></div>
+      <div class="col-10"><h1 style="font-size: 1.5rem">Minter push wallet</h1></div>
     </div>
     <div class="row">
       <div class="col">
-        <h3>Создание нового push wallet</h3>
+        <h3 style="font-size: 1.2rem">Если у вас есть ссылка перейдите по ней</h3>
+        <p class="text-monospace">При первом переходе по ссылке вам будет предложено создать 6ти значный пинкод, после этого произойдет активация кошелька.
+          При каждом следующем открытии ссылки с любого устройства вам просто нужно ввести этот пинкод и получить доступ к кошельку.<br>
+          Важное уточнение - seed-фраза и приватный ключ никогда не покидают устройства пользователя, подпись транзакций производится на сторое клиента, после активации никто кроме вас не имеет доступа к кошельку.
+        </p>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 30px;">
+      <div class="col">
+        <h3 style="font-size: 1.2rem">Создание нового push wallet</h3>
         <b-button variant="outline-info" v-on:click="createNew">Создать новый push-wallet</b-button>
 
         <ul v-if="isCreateNew" style="padding-left: 0; list-style: none; margin-top: 10px;">
-          <li>1. Пополните <br><strong>
-            <a v-bind:href="linka" target="_blank">{{ mxaddress}}</a></strong><br> на сумму, которая будет переведена на pushwallet после активации (за вычетом небольшой комиссии)</li>
-          <li>2. Отправьте ссылку: <br><strong><a v-bind:href="link" target="_blank">{{ link }}</a></strong>
+          <li class="text-monospace">1. Пополните <br><strong>
+            <a v-bind:href="linka" target="_blank">{{ mxaddress}}</a></strong><br>
+            <div class="text-center"><qrcode v-bind:value="mxaddress" :options="{ width: 200 }"></qrcode></div><br>
+            на сумму, которая будет переведена на pushwallet после активации (за вычетом небольшой комиссии)
+          </li>
+          <li class="text-monospace">2. Отправьте ссылку: <br><strong><a v-bind:href="link" target="_blank">{{ link }}</a></strong>
             <div class="text-center"><qrcode v-bind:value="link" :options="{ width: 200 }"></qrcode></div>
           </li>
-          <li>3. При первом открытии этой ссылки нужно будет придумать pincode, который позволит распоряжаться средствами.</li>
+          <li class="text-monospace">3. При первом открытии этой ссылки нужно будет придумать pincode, который позволит распоряжаться средствами.</li>
         </ul>
       </div>
     </div>
