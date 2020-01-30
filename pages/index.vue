@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row header-section">
       <div class="col-2"><b-img src="/minter-logo-circle.png" fluid alt="" style="max-width: 36px; margin-top: 3px;"></b-img></div>
-      <div class="col-10"><h1 style="font-size: 1.5rem">Minter push wallet</h1></div>
+      <div class="col-10" style="padding-top: 6px;"><h1 style="font-size: 1.5rem">Minter push wallet</h1></div>
     </div>
     <div class="row">
       <div class="col">
