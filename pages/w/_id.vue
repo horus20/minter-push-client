@@ -458,7 +458,7 @@
         } catch (error) {
           console.error(error)
         }
-        this.errorMsg = 'Ошибка актиации, попробуйте еще раз'
+        this.errorMsg = 'Ошибка актиации, ваш счет еще пуст. Попробуйте позже.'
         this.$bvModal.show('modalError')
       },
       /**
