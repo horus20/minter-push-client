@@ -16,7 +16,7 @@
                 <!-- <span class="balance-usd">~ 10.00 $</span><span class="balance-fiat">(620.00 руб)</span>-->
               </h5>
               <div>
-                <span v-for="balance in balances">{{ prettyFormat(balance.amount) }} <span class="symbol">{{ balance.coin }}</span></span>
+                <span v-for="balance in balances">{{ prettyFormat(balance.amount) }} <span class="symbol">{{ balance.coin }}</span> <span v-if="balance.usdAmount > 0">(${{ balance.usdAmount }})</span></span>
               </div>
               <div class="row">
                 <div class="col">
@@ -291,12 +291,15 @@
   import TxSignature from 'minterjs-tx/src/tx-signature'
   import VueQrcode from '@chenfengyuan/vue-qrcode'
   import * as cryptoRandomString from 'crypto-random-string'
+  import BigNumber from 'bignumber.js'
 
   const BACKEND_BASE_URL = 'https://minterpush.ru'
   //const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
   const EXPLORER_GATE_API_URL = 'https://gate-api.minter.network'
   const LINK = 'https://minterpush.ru/w/'
+  const COURCE_BIP_URL = 'https://api.bip.dev/api/price'
+  const COURCE_FIAT_URL = 'https://www.cbr-xml-daily.ru/daily_json.js'
 
   export default {
     components: {
@@ -317,6 +320,7 @@
         privateKey: null,
         address: null,
 
+        bipToUSD: 0,
         balances: [],
         nonce: 0,
 
@@ -379,9 +383,26 @@
        */
       updateBalance: async function () {
         try {
-          let response = await axios.get(`${EXPLORER_BASE_URL}/api/v1/addresses/${this.address}`)
+          let response;
+          response = await axios.get(COURCE_BIP_URL)
+          if (response.data && response.data.data && response.data.data.price) {
+            this.bipToUSD = new BigNumber(response.data.data.price).div(10000)
+          }
+
+          response = await axios.get(`${EXPLORER_BASE_URL}/api/v1/addresses/${this.address}`)
           if (response.data && response.data.data && response.data.data.balances) {
-            this.balances = response.data.data.balances
+            this.balances = response.data.data.balances.map(({ coin, amount}) => {
+              let usdAmount = new BigNumber(0)
+              if (coin === 'BIP') {
+                usdAmount = new BigNumber(amount).multipliedBy(this.bipToUSD)
+              }
+
+              return {
+                coin,
+                amount,
+                usdAmount: usdAmount.toNumber().toFixed(2)
+              }
+            })
           }
 
           response = await axios.get(`${EXPLORER_GATE_API_URL}/api/v1/nonce/${this.address}`)
