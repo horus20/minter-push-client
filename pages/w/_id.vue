@@ -49,6 +49,7 @@
           <b-button variant="outline-info" block v-on:click="showTransfer">Другой кошелек в сети Minter</b-button>
           <!-- <b-button variant="outline-info" block disabled v-on:click="showEmailTransfer">Отправить на email</b-button>-->
           <b-button variant="outline-info" block v-on:click="showPushTransfer">Создать новый push-wallet</b-button>
+          <b-button variant="outline-info" block v-on:click="showMyAddress">Показать мой адрес для переводов</b-button>
         </div>
       </div>
 
@@ -203,7 +204,7 @@
       <b-form ref="form">
         <div class="row">
           <div class="col">
-            <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru">BipToPhone</a></p>
+            <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru" target="_blank">BipToPhone</a></p>
           </div>
         </div>
         <b-form-group label="Сумма пополнения:" label-for="input-value"
@@ -253,7 +254,7 @@
       <b-form ref="form">
         <div class="row">
           <div class="col">
-            <p>Пополнение счета игрока в игре <a href="https://timeloop.games/">TimeLoop</a></p>
+            <p>Пополнение счета игрока в игре <a href="https://timeloop.games/" target="_blank">TimeLoop</a></p>
           </div>
         </div>
         <b-form-group label="Сумма пополнения:" label-for="input-value"
@@ -306,6 +307,7 @@
   import VueQrcode from '@chenfengyuan/vue-qrcode'
   import * as cryptoRandomString from 'crypto-random-string'
   import BigNumber from 'bignumber.js'
+  import VueClipboard from 'vue-clipboard2'
 
   const BACKEND_BASE_URL = 'https://minterpush.ru'
   //const BACKEND_BASE_URL = 'http://localhost:3048'
@@ -317,7 +319,8 @@
 
   export default {
     components: {
-      qrcode: VueQrcode
+      qrcode: VueQrcode,
+      clipboard: VueClipboard,
     },
     data () {
       return {
@@ -523,6 +526,12 @@
       showTimeLoop: function () {
         this.$bvModal.show('modalTimeloop')
       },
+      showMyAddress: function () {
+        this.successMsg = `Ваш адрес для приёма платежей! <br>
+                    <strong>${this.address}</strong>`
+        this.successMsgLink = this.address
+        this.$bvModal.show('modalSuccess')
+      },
       sendTransferModal: async function (bvModalEvt) {
         // Prevent modal from closing
         bvModalEvt.preventDefault()
@@ -712,6 +721,11 @@
         this.$bvModal.show('loader')
         await new Promise(resolve => setTimeout(resolve, ms))
         this.$bvModal.hide('loader');
+      },
+      copyToClipboard: function (message) {
+        this.$copyText(message).then(function (e) {
+        }, function (e) {
+        })
       }
     }
   }
