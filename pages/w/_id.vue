@@ -116,7 +116,10 @@
     >
       <div v-html="successMsg">
       </div>
-      <div v-if="successMsgLink!==''" class="text-center"><qrcode v-bind:value="successMsgLink" :options="{ width: 200 }"></qrcode></div>
+      <div v-if="successMsgLink!==''" class="text-center">
+        <!-- <b-button href="#" variant="outline-success" size="sm" v-on:click="copyToClipboard(successMsgLink)">Скопировать</b-button><br>-->
+        <qrcode v-bind:value="successMsgLink" :options="{ width: 200 }"></qrcode>
+      </div>
     </b-modal>
 
     <!-- transfer modal -->
@@ -143,7 +146,7 @@
           ></b-form-input>
         </b-form-group>
 
-        <b-form-group id="input-group-2" label="Сумма перевода:" label-for="input-value">
+        <b-form-group id="input-group-2" label="Сумма перевода:" label-for="input-value" style="position: relative;">
           <b-form-input
             id="input-value"
             v-model="transfer.value"
@@ -151,6 +154,7 @@
             required
             placeholder="Введите сумму"
           ></b-form-input>
+          <b-button href="#" variant="danger" size="sm" v-on:click="useMax(1)" class="max-btn">max</b-button>
         </b-form-group>
 
         <b-form-group id="input-group-3" label="Монета перевода:" label-for="input-coin">
@@ -173,6 +177,7 @@
       <b-form ref="form">
         <b-form-group label="Сумма пополнения:" label-for="input-value"
                       description="Сумма, которая будет зачислена за вычетом небольшой комиссии"
+                      style="position: relative;"
         >
           <b-form-input
             id="input-value"
@@ -182,6 +187,7 @@
             placeholder="Введите сумму"
             help
           ></b-form-input>
+          <b-button href="#" variant="danger" size="sm" v-on:click="useMax(2)" class="max-btn">max</b-button>
         </b-form-group>
 
         <b-form-group label="Монета:" label-for="input-coin" id="input-group-tp3">
@@ -207,14 +213,11 @@
             <p>Пополнение телефона произодится через сторонний сервис <a href="http://biptophone.ru" target="_blank">BipToPhone</a></p>
           </div>
         </div>
-        <b-form-group label="Сумма пополнения:" label-for="input-value"
-                      description="Сумма, которая будет передана партнеру для зачисления"
+        <b-form-group
+          id="input-group-pr-1"
+          label="Ваш телефон:"
+          label-for="input-mxaddress"
         >
-          <b-form-group
-            id="input-group-pr-1"
-            label="Ваш телефон:"
-            label-for="input-mxaddress"
-          >
             <b-form-input
               id="input-phone"
               v-model="transfer.address"
@@ -222,8 +225,12 @@
               required
               placeholder="Телефон +79..."
             ></b-form-input>
-          </b-form-group>
+        </b-form-group>
 
+        <b-form-group label="Сумма пополнения:" label-for="input-value"
+                      description="Сумма, которая будет передана партнеру для зачисления"
+                      style="position: relative;"
+        >
           <b-form-input
             id="input-value"
             v-model="transfer.value"
@@ -232,6 +239,7 @@
             placeholder="Введите сумму"
             help
           ></b-form-input>
+          <b-button href="#" variant="danger" size="sm" v-on:click="useMax(3)" class="max-btn">max</b-button>
         </b-form-group>
 
         <b-form-group label="Монета:" label-for="input-coin" id="input-group-pr3">
@@ -259,6 +267,7 @@
         </div>
         <b-form-group label="Сумма пополнения:" label-for="input-value"
                       description="Сумма, которая будет зачислена на игровой счет"
+                      style="position: relative;"
         >
           <b-form-input
             id="input-value"
@@ -268,6 +277,7 @@
             placeholder="Введите сумму"
             help
           ></b-form-input>
+          <b-button href="#" variant="danger" size="sm" v-on:click="useMax(4)" class="max-btn">max</b-button>
         </b-form-group>
 
         <b-form-group label="Монета:" label-for="input-coin" id="input-group-tl3">
@@ -307,7 +317,12 @@
   import VueQrcode from '@chenfengyuan/vue-qrcode'
   import * as cryptoRandomString from 'crypto-random-string'
   import BigNumber from 'bignumber.js'
+  import Vue from 'vue'
   import VueClipboard from 'vue-clipboard2'
+
+  if (process.client) {
+    Vue.use(VueClipboard)
+  }
 
   //const BACKEND_BASE_URL = 'https://minterpush.ru'
   const BACKEND_BASE_URL = 'http://localhost:3048'
@@ -320,7 +335,6 @@
   export default {
     components: {
       qrcode: VueQrcode,
-      clipboard: VueClipboard,
     },
     data () {
       return {
@@ -741,7 +755,22 @@
       copyToClipboard: function (message) {
         this.$copyText(message).then(function (e) {
         }, function (e) {
+          console.log(message, e)
         })
+      },
+      useMax: function (type = 1) {
+        if (type === 1) {// simple transfer
+          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.01).toString()
+        }
+        if (type === 2) {// pushwallet
+          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.11).toString()
+        }
+        if (type === 3) {// phone
+          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.01).toString()
+        }
+        if (type === 4) {// timeloop
+          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.138).toString()
+        }
       }
     }
   }
@@ -782,5 +811,12 @@
   .loader-modal {
     background: transparent;
     border: none;
+  }
+  .max-btn {
+    float: right;
+    position: absolute;
+    right: 4px;
+    top: 38px;
+    padding: 2px 10px;
   }
 </style>
