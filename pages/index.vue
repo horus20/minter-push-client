@@ -37,10 +37,15 @@
         <b-button v-if="!isCreateBlockNew" v-b-toggle.createDetail variant="outline-info">Параметры</b-button>
 
         <b-collapse v-if="!isCreateBlockNew" id="createDetail">
-          <div class="row balances">
+          <div class="row">
+            <div class="col">
+              <p>Для кого этот интерфейс? Для тех, кто хочет создать блок push-кошельков с одинаковыми стартовыми параметрами.</p>
+            </div>
+          </div>
+          <div class="row">
             <div class="col">
               <b-form ref="form">
-                <b-form-group
+                <!--<b-form-group
                   label="Ваш email:"
                   description="Необходим для редактирования"
                 >
@@ -59,7 +64,7 @@
                     v-model="createParams.password"
                     type="text"
                   ></b-form-input>
-                </b-form-group>
+                </b-form-group>-->
 
                 <b-form-group
                   label="Необходимое количество кошельков:"
@@ -86,7 +91,7 @@
                 >
                   <b-form-input
                     v-model="createParams.params.symbol"
-                    type="text" minlength="2"
+                    type="text" minlength="2" disabled
                     placeholder="BIP"
                   ></b-form-input>
                 </b-form-group>

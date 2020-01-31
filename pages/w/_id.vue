@@ -110,7 +110,7 @@
     </b-modal>
 
     <!-- success -->
-    <b-modal id="modalSuccess" centered title="" ok-only
+    <b-modal id="modalSuccess" centered v-bind:title="successTitle" ok-only
              header-bg-variant="info"
              header-text-variant="light"
     >
@@ -309,8 +309,8 @@
   import BigNumber from 'bignumber.js'
   import VueClipboard from 'vue-clipboard2'
 
-  const BACKEND_BASE_URL = 'https://minterpush.ru'
-  //const BACKEND_BASE_URL = 'http://localhost:3048'
+  //const BACKEND_BASE_URL = 'https://minterpush.ru'
+  const BACKEND_BASE_URL = 'http://localhost:3048'
   const EXPLORER_BASE_URL = 'https://explorer-api.minter.network'
   const EXPLORER_GATE_API_URL = 'https://gate-api.minter.network'
   const LINK = 'https://minterpush.ru/w/'
@@ -328,6 +328,7 @@
         pincode: '',
 
         errorMsg: '',
+        successTitle: '',
         successMsg: '',
         successMsgLink: '',
 
@@ -345,7 +346,9 @@
           address: '',
           value: '',
           symbol: '',
-        }
+        },
+
+        activateParams: {}
       }
     },
     computed: {
@@ -448,8 +451,21 @@
           if (response.status === 200) {
             if (response.data.status === 100) {
               // activate complete!
-              // wait 5 sec
-              await this.sleep(10 * 1000);
+              const afterActivateResponse = await axios.post(`${BACKEND_BASE_URL}/api/${this.uid}/after`, {
+                mxaddress: this.address,
+              })
+              // wait 6 sec
+              await this.sleep(6 * 1000);
+
+              if (afterActivateResponse.status === 200 && afterActivateResponse.data) {
+                this.activateParams = afterActivateResponse.data
+
+                if (this.activateParams.title || this.activateParams.notice) {
+                  this.successTitle = this.activateParams.title
+                  this.successMsg = this.activateParams.notice
+                  this.$bvModal.show('modalSuccess')
+                }
+              }
 
               this.isCreateNew = false
               this.isLogin = true
