@@ -12,12 +12,12 @@
         <div class="col">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Баланс:
-                <!-- <span class="balance-usd">~ 10.00 $</span><span class="balance-fiat">(620.00 руб)</span>-->
+              <h5 class="card-title" style="margin-bottom: 2px;">Баланс:
+                <span v-if="balanceSumUSD" class="balance-usd">{{ balanceSumUSD }}</span><span v-if="balanceSumUSD" class="balance-fiat"> ({{ balanceSumFiat }})</span>
               </h5>
-              <div>
-                <span v-for="balance in balances">{{ prettyFormat(balance.amount) }} <span class="symbol">{{ balance.coin }}</span> <span v-if="balance.usdAmount > 0">(${{ balance.usdAmount }})</span></span>
-              </div>
+              <ul style="padding: 0; list-style: none;">
+                <li v-for="balance in balances">{{ prettyFormat(balance.amount) }} <span class="symbol">{{ balance.coin }}</span> <span v-if="balance.usdAmount > 0">(${{ balance.usdAmount }})</span></li>
+              </ul>
               <div class="row">
                 <div class="col">
                   <b-button variant="outline-success" block size="sm" v-on:click="updateBalance">Обновить данные баланса</b-button>
@@ -317,6 +317,7 @@
   import VueQrcode from '@chenfengyuan/vue-qrcode'
   import * as cryptoRandomString from 'crypto-random-string'
   import BigNumber from 'bignumber.js'
+  import { Decimal } from 'decimal.js'
   import Vue from 'vue'
   import VueClipboard from 'vue-clipboard2'
 
@@ -331,6 +332,8 @@
   const LINK = 'https://minterpush.ru/w/'
   const COURCE_BIP_URL = 'https://api.bip.dev/api/price'
   const COURCE_FIAT_URL = 'https://www.cbr-xml-daily.ru/daily_json.js'
+
+  const DEFAULT_SYMBOL = 'BIP'
 
   export default {
     components: {
@@ -354,6 +357,10 @@
 
         bipToUSD: 0,
         balances: [],
+        balanceSumUSD: 0,
+        balanceSumFiat: 0,
+
+        coins: [],
         nonce: 0,
 
         transfer: {
@@ -419,18 +426,51 @@
         this.$bvModal.show('loader')
         try {
           let response;
+          // get BIP price in USD
           response = await axios.get(COURCE_BIP_URL)
           if (response.data && response.data.data && response.data.data.price) {
             this.bipToUSD = new BigNumber(response.data.data.price).div(10000)
           }
 
+          // get fiat cources
+          let USDtoRub = 0
+          response = await axios.get(COURCE_FIAT_URL)
+          if (response.data && response.data.Valute) {
+            USDtoRub = new BigNumber(response.data.Valute.USD.Value)
+          }
+
+          // get and calc any token price in BIP
+          response = await axios.get(`${EXPLORER_BASE_URL}/api/v1/coins`)
+          if (response.data && response.data.data) {
+            response.data.data.map((coin) => {
+              // Given a coin supply (s), reserve balance (r), CRR (c) and a sell amount (a),
+              // calculates the return for a given conversion
+              // return r * (1 - (1 - a / s) ^ (1 / c));
+              if (coin.symbol === DEFAULT_SYMBOL) {
+                this.coins[coin.symbol] = 1
+              } else {
+                const c1 = new Decimal(1).div(coin.crr)
+                const as = new Decimal(1).div(coin.volume)
+                const as1 = new Decimal(1).minus(as)
+                const as1c1 = as1.pow(c1)
+
+                this.coins[coin.symbol] = new Decimal(coin.reserveBalance).mul(
+                  new Decimal(1).minus(as1c1)
+                ).mul(100).toNumber()
+              }
+            })
+          }
+
+          // get user balance's
+          this.balanceSumUSD = new BigNumber(0)
           response = await axios.get(`${EXPLORER_BASE_URL}/api/v1/addresses/${this.address}`)
           if (response.data && response.data.data && response.data.data.balances) {
             this.balances = response.data.data.balances.map(({ coin, amount}) => {
-              let usdAmount = new BigNumber(0)
-              if (coin === 'BIP') {
-                usdAmount = new BigNumber(amount).multipliedBy(this.bipToUSD)
-              }
+              const coinToDef = this.coins[coin]
+              const usdAmount = new BigNumber(amount)
+                .multipliedBy(coinToDef)
+                .multipliedBy(this.bipToUSD)
+              this.balanceSumUSD = this.balanceSumUSD.plus(usdAmount)
 
               return {
                 coin,
@@ -439,6 +479,9 @@
               }
             })
           }
+
+          this.balanceSumFiat = this.balanceSumUSD.multipliedBy(USDtoRub).toNumber().toFixed(2) + ' руб'
+          this.balanceSumUSD = '~ $' + this.balanceSumUSD.toNumber().toFixed(2)
 
           response = await axios.get(`${EXPLORER_GATE_API_URL}/api/v1/nonce/${this.address}`)
           if (response.data && response.data.data && response.data.data.nonce) {
