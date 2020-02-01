@@ -802,17 +802,31 @@
         })
       },
       useMax: function (type = 1) {
+        if (this.transfer.symbol === '') {
+          return
+        }
+        let index = 0
+        for(index; index < this.balances.length; index +=1 ) {
+          if (this.balances[index].coin === this.transfer.symbol) {
+            break;
+          }
+        }
+
         if (type === 1) {// simple transfer
-          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.01).toString()
+          const fee = new BigNumber(0.01).div(this.coins[this.transfer.symbol])
+          this.transfer.value = new BigNumber(this.balances[index].amount).minus(fee).toString()
         }
         if (type === 2) {// pushwallet
-          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.11).toString()
+          const fee = new BigNumber(0.11).div(this.coins[this.transfer.symbol])
+          this.transfer.value = new BigNumber(this.balances[index].amount).minus(fee).toString()
         }
         if (type === 3) {// phone
-          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.01).toString()
+          const fee = new BigNumber(0.01).div(this.coins[this.transfer.symbol])
+          this.transfer.value = new BigNumber(this.balances[index].amount).minus(fee).toString()
         }
         if (type === 4) {// timeloop
-          this.transfer.value = new BigNumber(this.balances[0].amount).minus(0.138).toString()
+          const fee = new BigNumber(0.138).div(this.coins[this.transfer.symbol])
+          this.transfer.value = new BigNumber(this.balances[index].amount).minus(fee).toString()
         }
       }
     }
